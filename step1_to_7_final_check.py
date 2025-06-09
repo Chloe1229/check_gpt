@@ -1,5 +1,7 @@
 import streamlit as st
-import re
+from collections import defaultdict
+import ast
+
 
 # ===== 초기 상태 정의 =====
 if "step" not in st.session_state:
@@ -2895,7 +2897,12 @@ STEP7_ROWS_LIST = [{'condition': '(step6_selections.get("s1_1_req_1") == "충족
 
 # Step 7 condition evaluation function
 def conditions_met(step6_selections, condition_str):
-    """Return True if the condition string evaluates to True.
+    """Return True if the condition string evaluates to ``True``.
+
+    The expression is parsed with :mod:`ast` and only a very small
+    subset of Python is allowed. Supported operations are boolean
+    operators (``and``, ``or``, ``not``), comparisons (``==``, ``!=``,
+    ``is``, ``is not``) and calls to ``step6_selections.get``.
 
     Parameters
     ----------
@@ -2910,6 +2917,59 @@ def conditions_met(step6_selections, condition_str):
     try:
         # Evaluate the expression with a restricted global namespace.
         return bool(eval(condition_str, {"__builtins__": {}}, {"step6_selections": step6_selections}))
+    except Exception:
+        return False
+
+    def _eval(node):
+        """Recursively evaluate an AST node."""
+        if isinstance(node, ast.BoolOp):
+            if isinstance(node.op, ast.And):
+                return all(_eval(v) for v in node.values)
+            if isinstance(node.op, ast.Or):
+                return any(_eval(v) for v in node.values)
+            raise ValueError("Unsupported boolean operator")
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+            return not _eval(node.operand)
+        if isinstance(node, ast.Compare):
+            if len(node.ops) != 1 or len(node.comparators) != 1:
+                raise ValueError("Chained comparisons are not supported")
+            left = _eval(node.left)
+            right = _eval(node.comparators[0])
+            op = node.ops[0]
+            if isinstance(op, ast.Eq):
+                return left == right
+            if isinstance(op, ast.NotEq):
+                return left != right
+            if isinstance(op, ast.Is):
+                return left is right
+            if isinstance(op, ast.IsNot):
+                return left is not right
+            raise ValueError("Unsupported comparison operator")
+        if isinstance(node, ast.Call):
+            func = node.func
+            if (
+                isinstance(func, ast.Attribute)
+                and isinstance(func.value, ast.Name)
+                and func.value.id == "step6_selections"
+                and func.attr == "get"
+            ):
+                args = [_eval(arg) for arg in node.args]
+                kwargs = {kw.arg: _eval(kw.value) for kw in node.keywords}
+                return step6_selections.get(*args, **kwargs)
+            raise ValueError("Only step6_selections.get calls are allowed")
+        if isinstance(node, ast.Constant):
+            return node.value
+        if isinstance(node, ast.Name):
+            if node.id == "True":
+                return True
+            if node.id == "False":
+                return False
+        raise ValueError(f"Unsupported expression: {ast.dump(node)}")
+
+    try:
+        tree = ast.parse(condition_str, mode="eval")
+        return bool(_eval(tree.body))
+
     except Exception:
         return False
 
