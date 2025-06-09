@@ -710,7 +710,7 @@ if st.session_state.step == 6:
                 st.button("결과 확인하기", on_click=go_to_step7)
             else:
                 st.button("다음항목 선택하기", on_click=go_to_next_step6_page)
-STEP7_ROWS = [{'condition': '(step6_selections.get("s1_1_req_1") == "충족")',
+STEP7_ROWS_LIST = [{'condition': '(step6_selections.get("s1_1_req_1") == "충족")',
   'heading_text': '3.2.S 원료의약품',
   'output_1_tag': '필요서류는 다음과 같습니다.\n'
                   '\n'
@@ -2892,7 +2892,32 @@ STEP7_ROWS = [{'condition': '(step6_selections.get("s1_1_req_1") == "충족")',
   'subitem_met': 'Cmaj',
   'title_key': '디자인스페이스(Design Space) 변경\n24. 새로운 디자인스페이스 도입 또는 허가된 디자인스페이스의 확장',
   'title_text': '(subitem_met != "") and (requirements_met == "") and (requirements_unmet == "")'}]
-    
+
+# Step 7 condition evaluation function
+def conditions_met(step6_selections, condition_str):
+    """Return True if the condition string evaluates to True.
+
+    Parameters
+    ----------
+    step6_selections : dict
+        Dictionary of selections from Step 6 used when evaluating the
+        condition expression.
+    condition_str : str
+        Boolean expression referencing ``step6_selections``.
+    """
+    if not condition_str:
+        return False
+    try:
+        # Evaluate the expression with a restricted global namespace.
+        return bool(eval(condition_str, {"__builtins__": {}}, {"step6_selections": step6_selections}))
+    except Exception:
+        return False
+
+# Convert list to dictionary keyed by title_key for efficient lookups
+STEP7_ROWS = {}
+for _rule in STEP7_ROWS_LIST:
+    STEP7_ROWS.setdefault(_rule["title_key"], []).append(_rule)
+
 # ===== Step 7 =====
 if st.session_state.step == 7:
     if "step7_page" not in st.session_state:
@@ -2917,23 +2942,23 @@ if st.session_state.step == 7:
         st.markdown(step6_items[current_key]["title"])
 
         results = []
+        output_texts = []
 
-        for rule in STEP7_ROWS:
-            if rule["title_key"] != current_key:
-                continue
-
+        for rule in STEP7_ROWS.get(current_key, []):
             matched = conditions_met(step6_selections, rule.get("conditions", []))
 
             if matched:
                 output_1_text = rule.get("output_1_text", "")
                 output_2_text = rule.get("output_2_text", "")
                 if output_1_text:
-                    st.markdown(output_1_text)
+                    output_texts.append(output_1_text)
                 if output_2_text:
-                    st.markdown(output_2_text)
+                    output_texts.append(output_2_text)
                 results.append(rule.get("output_1_tag", ""))
 
         if results:
+            for text in output_texts:
+                st.markdown(text)
             st.session_state.step7_results[current_key] = results
         else:
             st.warning(
