@@ -1,5 +1,6 @@
 import streamlit as st
 from collections import defaultdict
+import os
 import ast
 
 
@@ -3052,3 +3053,60 @@ if st.session_state.step == 7:
                     "다음단계로",
                     on_click=go_to_next_step7_page
                 )
+
+# ===== Step 8 Document Generation =====
+from docxtpl import DocxTemplate
+from docx2pdf import convert
+
+step8_template = "step8_양식.docx"
+step8_empty = "step8_양식_empty.docx"
+
+# Generate filled document and return file paths
+def generate_step8_doc():
+    doc = DocxTemplate(step8_template)
+    items = []
+    for code in st.session_state.step6_targets:
+        title = step6_items.get(code, {}).get("title", code)
+        results = st.session_state.step7_results.get(code, [])
+        result_text = "\n".join(results)
+        items.append({"title": title, "result": result_text})
+    doc.render({"items": items})
+    filled_path = "step8_filled.docx"
+    doc.save(filled_path)
+    pdf_path = "step8_filled.pdf"
+    try:
+        convert(filled_path, pdf_path)
+    except Exception:
+        pdf_path = None
+    return filled_path, pdf_path
+
+# ===== Step 8 Preview =====
+if st.session_state.step == 8:
+    if "step8_page" not in st.session_state:
+        st.session_state.step8_page = 0
+    targets = st.session_state.step6_targets
+    total_pages = len(targets)
+    if total_pages == 0:
+        st.write("결과가 없습니다.")
+    else:
+        page = max(0, min(st.session_state.step8_page, total_pages - 1))
+        st.session_state.step8_page = page
+        current_key = targets[page]
+        st.markdown("## 신청양식 미리보기")
+        st.markdown(step6_items[current_key]["title"])
+        for res in st.session_state.step7_results.get(current_key, []):
+            st.write(res)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.button("이전", on_click=lambda: st.session_state.__setitem__('step8_page', page-1), disabled=page==0)
+        with col2:
+            st.button("다음", on_click=lambda: st.session_state.__setitem__('step8_page', page+1), disabled=page==total_pages-1)
+    if st.button("문서 생성"):
+        docx_path, pdf_path = generate_step8_doc()
+        if pdf_path and os.path.exists(pdf_path):
+            with open(pdf_path, "rb") as f:
+                st.download_button("파일 다운로드하기", f, file_name="step8.pdf")
+            st.markdown(f'<a href="{pdf_path}" target="_blank">인쇄하기</a>', unsafe_allow_html=True)
+        else:
+            st.error("PDF 변환 실패")
+    st.button("이전단계로", on_click=lambda: st.session_state.__setitem__('step', 7))
