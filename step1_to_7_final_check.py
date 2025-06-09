@@ -242,6 +242,7 @@ def go_to_step6():
     st.session_state.step6_targets = [
         key for key, val in st.session_state.step5_selections.items() if val == "변경 있음"
     ]
+    st.session_state.step6_page = 0
     st.session_state.step = 6
 
 def go_back_to_step4():
@@ -636,7 +637,9 @@ if st.session_state.step == 6:
     if not targets:
         st.warning("Step5에서 선택된 항목이 없습니다.")
     else:
-        current_key = targets[st.session_state.step6_page]
+        page = min(max(st.session_state.step6_page, 0), len(targets) - 1)
+        st.session_state.step6_page = page
+        current_key = targets[page]
         block = step6_items.get(current_key)
 
         if block:
