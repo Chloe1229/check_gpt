@@ -1783,92 +1783,34 @@ if st.session_state.step == 7:
         st.markdown("## 제조방법 변경에 따른 필요서류 및 보고유형")
         st.markdown(step6_items[current_key]["title"])
 
-        hit = False
+        results = []
 
-        if current_key == "s1_1":
-            if step6_selections.get("s1_1_req_1") == "충족":
-                hit = True
-                output_1_text = (
-                    "보고유형은 다음과 같습니다.\n\n"
-                    "AR, 연차보고\n"
-                    "\u300C의약품의 품목허가‧신고‧심사 규정\u300D 제3조의2 제2항 및 제4항에 따른 연차보고(Annual Report, AR) 수준의 변경사항입니다."
-                )
-                output_2_text = (
-                    "필요서류는 다음과 같습니다.\n\n"
-                    "1. (S.1.1) 공정서 또는 국제 의약품 일반명 리스트(INN, The International Nonproprietary Name) 등 근거서류.\n"
-                    "2. 개정된 제품정보"
-                )
-                st.markdown(output_1_text)
-                st.markdown(output_2_text)
-                st.session_state.step7_results.setdefault(current_key, []).append(
-                    ("AR", output_1_text, output_2_text)
-                )
+        for rule in STEP7_ROWS:
+            if rule["title_key"] != current_key:
+                continue
 
-        elif current_key == "s2_2":
-            if (
-                step6_selections.get("s2_2_sub_2a") == "변경 있음" and
-                step6_selections.get("s2_2_req_3") == "충족" and
-                step6_selections.get("s2_2_req_4") == "충족" and
-                step6_selections.get("s2_2_req_9") == "충족" and
-                step6_selections.get("s2_2_req_1") == "미충족" and
-                step6_selections.get("s2_2_req_2") == "미충족" and
-                step6_selections.get("s2_2_req_5") == "미충족" and
-                step6_selections.get("s2_2_req_6") == "미충족" and
-                step6_selections.get("s2_2_req_7") == "미충족" and
-                step6_selections.get("s2_2_req_8") == "미충족" and
-                step6_selections.get("s2_2_req_10") == "미충족"
-            ):
-                hit = True
-                output_1_text = (
-                    "보고유형은 다음과 같습니다.\n\n"
-                    "IR, 시판전보고\n"
-                    "\u300C의약품의 품목허가‧신고‧심사 규정\u300D 제3조의2제4항 단서조항에 따른 시판전 보고(Immediate Report, IR) 수준의 변경사항입니다."
-                )
-                output_2_text = (
-                    "필요서류는 다음과 같습니다.\n\n"
-                    "1. (해당되는 경우) 해당 품목을 제조하는 제조소에 ‘의약품 등의 안전에 관한 규칙’ 제48조의2에 따른 제조 및 품질관리기준 적합판정서, 해외 제조원인 경우 제4조제1항제4호에 따른 유효기간 내의 제조증명서.\n"
-                    "2. (S.2.1) 제조소명, 주소, 책임부과범위 및 해당하는 경우 수탁업소에 관한 자료.\n"
-                    "4. 변경 전·후 제조소의 원료의약품, 중간체 또는 원료의약품 출발 물질 (해당되는 경우)제조 공정에 관한 자료.\n"
-                    "10. 변경 전·후 출발 물질 또는 중간체의 최소 1배치에 대한 시험 성적서(해당하는 경우), 출발물질 또는 중간체 변경 전·후 최종 원료의약품 2배치에 대한 배치분석 자료."
-                )
-                st.markdown(output_1_text)
-                st.markdown(output_2_text)
-                st.session_state.step7_results.setdefault(current_key, []).append(
-                    ("IR", output_1_text, output_2_text)
-                )
+            expr = rule.get("output_condition_all_met", "")
+            expr = expr.replace("output_if_all_conditions_met = (", "").rstrip(")")
+            expr = expr.replace("\"\"", "\"")
+            expr = " and ".join(line.strip() for line in expr.split("\n") if line.strip())
+            expr = expr.replace("and and", "and")
+            try:
+                matched = expr and eval(expr, {}, {"step6_selections": step6_selections})
+            except Exception:
+                matched = False
 
-        elif current_key == "s2_3":
-            if (
-                step6_selections.get("s2_3_req_1") == "충족"
-                and step6_selections.get("s2_3_req_2") == "충족"
-                and step6_selections.get("s2_3_req_3") == "충족"
-                and step6_selections.get("s2_3_req_4") == "충족"
-                and step6_selections.get("s2_3_req_5") == "충족"
-                and step6_selections.get("s2_3_req_6") == "충족"
-                and step6_selections.get("s2_3_req_7") == "충족"
-                and step6_selections.get("s2_3_req_8") == "충족"
-                and step6_selections.get("s2_3_req_9") == "미충족"
-            ):
-                hit = True
-                output_1_text = (
-                    "보고유형은 다음과 같습니다.\n\n"
-                    "IR, 시판전보고\n"
-                    "\u300C의약품의 품목허가‧신고‧심사 규정\u300D 제3조의2제4항 단서조항에 따른 시판전 보고(Immediate Report, IR) 수준의 변경사항입니다."
-                )
-                output_2_text = (
-                    "필요서류는 다음과 같습니다.\n\n"
-                    "2. 변경 전·후 제조방법 비교표 등 변경 전·후에 관한 자료\n"
-                    "3. (S.2.2) 변경하고자 하는 합성 공정 흐름도 및 상세 제조 공정에 관한 자료.\n"
-                    "4. (S.2.3)(해당되는 경우) 변경하고자 하는 원료의약품 제조에 사용된 원료(예 : 원료약품, 출발 물질, 용매, 시약, 촉매)의 규격 및 시험 성적서.\n"
-                    "11. (S.4.4) 변경 전·후 원료의약품 최소 2배치(파일럿 배치 이상)에 대한 배치분석 자료."
-                )
-                st.markdown(output_1_text)
-                st.markdown(output_2_text)
-                st.session_state.step7_results.setdefault(current_key, []).append(
-                    ("IR", output_1_text, output_2_text)
-                )
+            if matched:
+                output_1_text = rule.get("output_1_text", "")
+                output_2_text = rule.get("output_2_text", "")
+                if output_1_text:
+                    st.markdown(output_1_text)
+                if output_2_text:
+                    st.markdown(output_2_text)
+                results.append(rule.get("output_1_tag", ""))
 
-        if not hit:
+        if results:
+            st.session_state.step7_results[current_key] = results
+        else:
             st.warning(
                 "해당 변경사항에 대한 충족조건을 고려하였을 때,\n"
                 "\u300C의약품 허가 후 제조방법 변경관리 가이드라인\u300D에서 제시하고 있는\n"
