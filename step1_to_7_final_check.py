@@ -616,6 +616,18 @@ def go_to_step7():
     st.session_state.step7_page = 0
     st.session_state.step7_results = {}
 
+# Step 7 페이징 및 복귀 함수
+def go_to_prev_step7_page():
+    if st.session_state.step7_page > 0:
+        st.session_state.step7_page -= 1
+
+def go_to_next_step7_page():
+    if st.session_state.step7_page < len(st.session_state.step6_targets) - 1:
+        st.session_state.step7_page += 1
+
+def go_back_to_step6():
+    st.session_state.step = 6
+
 if st.session_state.step == 6:
     st.markdown("## Step 6")
     st.write("Step 6. Step5에서 '변경 있음'으로 선택된 항목에 대해 충족요건을 모두 선택하세요.")
@@ -1864,8 +1876,7 @@ if st.session_state.step == 7:
         with col1:
             st.button(
                 "이전단계로",
-                disabled=st.session_state.step7_page == 0,
-                on_click=lambda: st.session_state.__setitem__('step7_page', st.session_state.step7_page - 1)
+                on_click=go_back_to_step6 if st.session_state.step7_page == 0 else go_to_prev_step7_page
             )
         with col2:
             if st.session_state.step7_page == total_pages - 1:
@@ -1876,5 +1887,5 @@ if st.session_state.step == 7:
             else:
                 st.button(
                     "다음단계로",
-                    on_click=lambda: st.session_state.__setitem__('step7_page', st.session_state.step7_page + 1)
+                    on_click=go_to_next_step7_page
                 )
