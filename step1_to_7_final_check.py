@@ -628,6 +628,7 @@ def go_to_next_step7_page():
 
 def go_back_to_step6():
     st.session_state.step = 6
+    st.session_state.step7_page = 0
 
 if st.session_state.step == 6:
     st.markdown("## Step 6")
@@ -1819,10 +1820,18 @@ if st.session_state.step == 7:
 
         col1, col2 = st.columns(2)
         with col1:
-            st.button(
-                "이전단계로",
-                on_click=go_back_to_step6 if st.session_state.step7_page == 0 else go_to_prev_step7_page
-            )
+            if st.session_state.step7_page == 0:
+                st.button(
+                    "이전단계로",
+                    on_click=go_back_to_step6,
+                    key="step7_prev_root"
+                )
+            else:
+                st.button(
+                    "이전단계로",
+                    on_click=go_to_prev_step7_page,
+                    key="step7_prev"
+                )
         with col2:
             if st.session_state.step7_page == total_pages - 1:
                 st.button(
