@@ -634,6 +634,9 @@ def go_back_to_step6():
     st.session_state.step = 6
     st.session_state.step7_page = 0
 
+def go_back_to_step7():
+    st.session_state.step = 7
+
 if st.session_state.step == 6:
     st.markdown("## Step 6")
     st.write("Step 6. Step5에서 '변경 있음'으로 선택된 항목에 대해 충족요건을 모두 선택하세요.")
@@ -3046,7 +3049,7 @@ if st.session_state.step == 7:
             if st.session_state.step7_page == total_pages - 1:
                 st.button(
                     "신청양식 확인하기",
-                    on_click=lambda: st.session_state.__setitem__('step', 8)
+                    on_click=go_back_to_step7
                 )
             else:
                 st.button(
