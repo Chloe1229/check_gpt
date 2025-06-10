@@ -695,3 +695,114 @@ if st.session_state.step == 6:
                 st.button("결과 확인하기", on_click=go_to_step7)
             else:
                 st.button("다음항목 선택하기", on_click=go_to_next_step6_page)
+
+# ===== Step 7 =====
+import pandas as pd
+from datetime import date
+from fpdf import FPDF
+import base64
+
+# Load step7 evaluation rows once
+if 'STEP7_ROWS' not in st.session_state:
+    df = pd.read_excel('step7_data_refac.xlsx')
+    st.session_state.STEP7_ROWS = df.to_dict('records')
+
+if 'step7_results' not in st.session_state:
+    st.session_state.step7_results = {}
+
+if 'step8_pdfs' not in st.session_state:
+    st.session_state.step8_pdfs = {}
+
+# ===== Step 7 화면 및 로직 =====
+def compute_step7_results():
+    results = {}
+    step6_selections = st.session_state.step6_selections
+    for row in st.session_state.STEP7_ROWS:
+        local_vars = {'step6_selections': step6_selections}
+        try:
+            exec(row['output_if_all_conditions_met'], {}, local_vars)
+            cond = local_vars.get('output_if_all_conditions_met', False)
+        except Exception:
+            cond = False
+        if cond:
+            tkey = row['title_key']
+            if tkey not in results:
+                results[tkey] = {
+                    'title_text': row['title_text'],
+                    'outputs': []
+                }
+            results[tkey]['outputs'].append({
+                'output_1_tag': row['output_1_tag'],
+                'output_1_text': row['output_1_text'],
+                'output_2_text': row['output_2_text']
+            })
+    st.session_state.step7_results = results
+
+
+def go_to_step8():
+    st.session_state.step = 8
+
+if st.session_state.step == 7:
+    st.markdown('## Step 7 결과')
+    if not st.session_state.step7_results:
+        compute_step7_results()
+    results = st.session_state.step7_results
+    if not results:
+        st.info('도출 결과 없음')
+    else:
+        for tkey, data in results.items():
+            st.markdown(f"### {data['title_text']}")
+            for out in data['outputs']:
+                st.markdown(f"**{out['output_1_tag']}**")
+                st.write(out['output_1_text'])
+                st.write(out['output_2_text'])
+    st.button('신청양식 생성', on_click=go_to_step8)
+
+# ===== Step 8 PDF 생성 =====
+def make_pdf(title_key, group):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font('Helvetica', size=12)
+    pdf.cell(0, 10, '제조방법변경 신청양식', ln=True)
+    pdf.multi_cell(0, 10, f"2. 변경유형\n{group['title_text']}")
+    first_line = group['outputs'][0]['output_1_text'].split('\n')[0]
+    pdf.multi_cell(0, 10, f"3. 신청 유형\n{first_line}")
+    pdf.cell(0, 10, '4. 충족조건', ln=True)
+    block = step6_items.get(title_key, {})
+    for req_key, req_text in block.get('requirements', {}).items():
+        val = st.session_state.step6_selections.get(f"{title_key}_req_{req_key}")
+        mark = '○' if val == '충족' else '×'
+        pdf.multi_cell(0, 10, f"{req_text} {mark}")
+    pdf.cell(0, 10, '5. 필요서류', ln=True)
+    for out in group['outputs']:
+        for line in out['output_2_text'].split('\n'):
+            if line.strip():
+                pdf.multi_cell(0, 10, line)
+    today = date.today().strftime('%Y%m%d')
+    filename = f"신청양식_{title_key}_{today}.pdf"
+    pdf.output(filename)
+    try:
+        import os
+        os.chmod(filename, 0o444)
+    except Exception:
+        pass
+    with open(filename, 'rb') as f:
+        data = f.read()
+    return filename, data
+
+if st.session_state.step == 8:
+    results = st.session_state.step7_results
+    if not results:
+        st.write('신청양식 자동생성 불가: 도출 결과 없음')
+    else:
+        if not st.session_state.step8_pdfs:
+            for tkey, group in results.items():
+                fname, data = make_pdf(tkey, group)
+                st.session_state.step8_pdfs[tkey] = {'name': fname, 'data': data}
+        for tkey, info in st.session_state.step8_pdfs.items():
+            st.markdown(f"### {tkey}")
+            b64 = base64.b64encode(info['data']).decode()
+            st.download_button('파일 다운로드하기', info['data'], file_name=info['name'])
+            st.button('인쇄하기', on_click=lambda b64=b64: st.components.v1.html(f"<iframe src='data:application/pdf;base64,{b64}' onload='this.contentWindow.print();'></iframe>", height=0))
+            st.components.v1.html(f"<iframe src='data:application/pdf;base64,{b64}' width='700' height='900'></iframe>", height=900)
+
