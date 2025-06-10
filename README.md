@@ -22,6 +22,24 @@ The following reference files are mandatory and authoritative:
 * Step8 filled template reference (Excel/Word):
   Contains the field-by-field layout and expected values for each section of the generated application. Codex must map outputs to this layout exactly as shown.
 
+[작업 전제]
+- 현재 step6까지의 모든 코드는 이미 사용자 의도와 완벽히 일치하므로, **step6 부분(입력, 선택값 저장, 변수구조 등)은 절대 수정하지 마세요.**
+- step6은 사용자 선택값을 st.session_state.step6_selections (dict)로 저장하고 있습니다.
+
+[작업 지시]
+- **step6 이후에 바로 이어지는 step7 및 step8 코드를 아래 명세에 따라 새롭게 작성**해주세요.
+- step7/step8은 위에서 제공된 상세작업지시서에 100% 일치하게, 모든 판단조건/출력/페이징/양식구조/예외처리까지 구현해주세요.
+    - step7: 75개 케이스를 하드코딩(if-elif, eval 등)으로, title_key별 그룹화·독립판단·병렬출력 방식
+    - step8: 공식양식(첨부 워드/엑셀/이미지)와 100% 일치하게 PDF 자동생성, 다운로드/인쇄기능 구현(수정불가)
+- step6의 변수명/구조/데이터 흐름을 반드시 그대로 연계하여, **사용자 입력값이 그대로 step7/step8로 반영**되어야 합니다.
+- step6 부분의 함수/로직/변수명/데이터 저장방식에는 어떤 형태의 변경도 절대 가하지 마세요.
+- step7/step8 코드는 step6 이후에 이어 붙여서 동작하게 구현합니다.
+
+[강조]
+- step6 코드를 **함수/로직/구조 일절 수정하지 않고**, 그 이후(step7, step8)만 작성합니다.
+- 기존 step6의 st.session_state.step6_selections 등 데이터구조를 정확히 활용하여 후속로직을 만드세요.
+
+
 Key instructions for Codex:
 
 * Step7 logic must evaluate each row in the dataset and apply exact if-condition matching using output\_condition\_all\_met.
