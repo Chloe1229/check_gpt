@@ -1,4 +1,6 @@
-import streamlit as st
+from datetime import date␊
+import base64
+from docx import Document
 
 # ===== 초기 상태 정의 =====
 if "step" not in st.session_state:
@@ -1225,105 +1227,97 @@ STEP7_ROWS = [
   }
 ]
 
-"step7_results"가 st.session_state 에 없는 경우 :
-   
+if "step7_results" not in st.session_state:
     st.session_state.step7_results = {}
-"step7_page"가 st.session_state
- 에 없는 경우 :   
+if "step7_page" not in st.session_state:
     st.session_state.step7_page = 0
 
-폴백_메시지 = (
+FALLBACK_MESSAGE = (
     "해당 변경사항에 대한 충족조건을 고려하였을 때,\n"
     "「의약품 허가 후 제조방법 변경관리 가이드라인」에서 제시하고 있는\n"
     "범위에 해당하지 않는 것으로 확인됩니다"
 )
 
-def compute_step7_results ():
- 
-    st.session_state.step7_results = {k: [] st.session_state.step6_targets 의 k 에 대해 }
-    STEP7_ROWS
- 의 행 에 대해 :
-        tk = 행[ "제목_키" ]
-        tk가 st.session_state.step7_results 에 없는 경우 :
- 
-            계속하다
-        expr = row[ "출력_조건_모두_충족" ]
-        내부 = expr[expr.find( "(" )+ 1 :].strip()
-        inner.endswith( ")" 인 경우 :
-            내부 = 내부[:- 1 ]
-        노력하다 :
-            if eval (inner, {}, { "step6_selections" : st.session_state.step6_selections}):
- 
-                st.session_state.step7_results[tk].append(
-                    (행[ "출력_1_태그" ], 행[ "출력_1_텍스트" ], 행[ "출력_2_텍스트" ])
+def compute_step7_results():
+    selections = st.session_state.step6_selections
+    st.session_state.step7_results = {k: [] for k in st.session_state.step6_targets}
+    for row in STEP7_ROWS:
+        tkey = row["title_key"]
+        if tkey not in st.session_state.step7_results:
+            continue
+        expr = row["output_if_all_conditions_met"]
+        inner = expr[expr.find("(") + 1:].strip()
+        if inner.endswith(")"):
+            inner = inner[:-1]
+        try:
+            if eval(inner, {}, {"step6_selections": selections}):
+                st.session_state.step7_results[tkey].append(
+                    (row["output_1_tag"], row["output_1_text"], row["output_2_text"])
                 )
-        예외를 제외하고 :
-            통과하다
+        except Exception:
+            pass
 
-def go_back_to_step6_from_step7 ():
- 
+def go_back_to_step6_from_step7():
     st.session_state.step = 6
 
-def go_to_prev_step7_page ():
- 
-    st.session_state.step7_page > 0 인 경우 :
+def go_to_prev_step7_page():
+    if st.session_state.step7_page > 0:
         st.session_state.step7_page -= 1
 
-def go_to_next_step7_page ():
- 
-    st.session_state.step7_page < len (st.session_state.step6_targets) - 1 인 경우 :
+def go_to_next_step7_page():
+    if st.session_state.step7_page < len(st.session_state.step6_targets) - 1:
         st.session_state.step7_page += 1
 
-def go_to_step8 ():
- 
+def go_to_step8():
     st.session_state.step = 8
 
-st.session_state.step == 7 인 경우 :
-    st.markdown( "## 7단계" )
+if st.session_state.step == 7:
+    st.markdown("## 7단계")
     st.write("Step 7. 선택한 항목의 보고유형 및 필요서류를 확인하세요.")
 
-    "step7_results_built"가 st.session_state 에 없는 경우 :
-   
-        계산_단계_결과()
-        st.session_state.step7_results_built = 참
+    if "step7_results_built" not in st.session_state:
+        compute_step7_results()
+        st.session_state.step7_results_built = True
 
-    타겟 = st.session_state.step6_targets
-    대상이 아닌 경우 :
- 
+    targets = st.session_state.step6_targets
+    if not targets:
         st.warning("Step5에서 선택된 항목이 없습니다.")
-    또 다른 :
-        현재 키 = 대상[st.session_state.step7_page]
-        블록 = step6_items.get(현재_키)
-        블록 인 경우 :
-            st.markdown( f"### {블록[ '제목' ]} " )
-        결과 = st.session_state.step7_results.get(현재_키, [])
-        결과가 다음과 같은 경우 :
-            태그, text1, text2 의 결과에 대해 :
+    else:
+        current_key = targets[st.session_state.step7_page]
+        block = step6_items.get(current_key)
+        if block:
+            st.markdown(f"### {block['title']}")
+        results = st.session_state.step7_results.get(current_key, [])
+        if results:
+            for tag, text1, text2 in results:
                 st.markdown(text1)
                 st.markdown(text2)
-        또 다른 :
-            st.markdown(폴백 메시지)
+        else:
+            st.markdown(FALLBACK_MESSAGE)
 
-        col1, col2 = st.columns( 2 )
-        col1
- 과 함께 :
+        col1, col2 = st.columns(2)
+        with col1:
             st.button(
                 "이전단계로",
-                on_click= st.session_state.step7_page == 0 이면 step6에서 step7로 돌아가고 그렇지 않으면 step7로 이전 페이지로 이동합니다.
- 
+                on_click=go_back_to_step6_from_step7
+                if st.session_state.step7_page == 0
+                else go_to_prev_step7_page,
             )
-        col2
- 와 함께 :
-            st.session_state.step7_page == len (대상) - 1 인 경우 :
+        with col2:
+            if st.session_state.step7_page == len(targets) - 1:
                 st.button("다음단계로", on_click=go_to_step8)
-            또 다른 :
+            else:
                 st.button("다음항목 확인하기", on_click=go_to_next_step7_page)
+
 
 # ===== Step 7 =====
 import pandas as pd
 from datetime import date
 from fpdf import FPDF
 import base64
+
+# Step7/8에서 조건 미충족 시 표시할 기본 문구
+FALLBACK_MESSAGE = "신청양식 자동생성 불가: 도출 결과 없음"
 
 # Load step7 evaluation rows once
 if 'STEP7_ROWS' not in st.session_state:
@@ -1370,8 +1364,8 @@ if st.session_state.step == 7:
     if not st.session_state.step7_results:
         compute_step7_results()
     results = st.session_state.step7_results
-    if not results:
-        st.info('도출 결과 없음')
+    if not results:␊
+        st.markdown(FALLBACK_MESSAGE)
     else:
         for tkey, data in results.items():
             st.markdown(f"### {data['title_text']}")
@@ -1383,41 +1377,62 @@ if st.session_state.step == 7:
 
 # ===== Step 8 PDF 생성 =====
 def make_pdf(title_key, group):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font('Helvetica', size=12)
-    pdf.cell(0, 10, '제조방법변경 신청양식', ln=True)
-    pdf.multi_cell(0, 10, f"2. 변경유형\n{group['title_text']}")
-    first_line = group['outputs'][0]['output_1_text'].split('\n')[0]
-    pdf.multi_cell(0, 10, f"3. 신청 유형\n{first_line}")
-    pdf.cell(0, 10, '4. 충족조건', ln=True)
-    block = step6_items.get(title_key, {})
-    for req_key, req_text in block.get('requirements', {}).items():
-        val = st.session_state.step6_selections.get(f"{title_key}_req_{req_key}")
-        mark = '○' if val == '충족' else '×'
-        pdf.multi_cell(0, 10, f"{req_text} {mark}")
-    pdf.cell(0, 10, '5. 필요서류', ln=True)
-    for out in group['outputs']:
-        for line in out['output_2_text'].split('\n'):
-            if line.strip():
-                pdf.multi_cell(0, 10, line)
-    today = date.today().strftime('%Y%m%d')
-    filename = f"신청양식_{title_key}_{today}.pdf"
-    pdf.output(filename)
-    try:
-        import os
-        os.chmod(filename, 0o444)
-    except Exception:
-        pass
-    with open(filename, 'rb') as f:
-        data = f.read()
-    return filename, data
+    doc = Document('제조방법변경 신청양식_empty.docx')
+    table = doc.tables[0]
 
-if st.session_state.step == 8:
-    results = st.session_state.step7_results
-    if not results:
-        st.write('신청양식 자동생성 불가: 도출 결과 없음')
-    else:
+    change_text = group['title_text']
+    types = '\n'.join([out['output_1_text'].split('\n')[0] for out in group['outputs']])
+
+    sec_row = table.rows[4]
+    for i in range(2):
+        sec_row.cells[i].text = change_text
+    for j in range(2, 5):
+        sec_row.cells[j].text = types
+
+    reqs = list(step6_items.get(title_key, {}).get('requirements', {}).items())
+    for idx in range(5):
+        r = table.rows[6 + idx]
+        if idx < len(reqs):
+            k, txt = reqs[idx]
+            mark = '○' if st.session_state.step6_selections.get(f"{title_key}_req_{k}") == '충족' else '×'
+            for c in range(3):
+                r.cells[c].text = txt
+            r.cells[3].text = mark
+            r.cells[4].text = mark
+        else:
+            for c in r.cells:
+                c.text = ''
+
+    doc_lines = []
+    for out in group['outputs']:
+        doc_lines.extend([ln for ln in out['output_2_text'].split('\n') if ln.strip()])
+    for idx in range(7):
+        r = table.rows[12 + idx]
+        if idx < len(doc_lines):
+            for c in range(3):
+                r.cells[c].text = doc_lines[idx]
+            r.cells[3].text = ''
+            r.cells[4].text = ''
+        else:
+            for c in r.cells:
+                c.text = ''
+
+    today = date.today().strftime('%Y%m%d')
+    doc_name = f"신청양식_{title_key}_{today}.docx"
+    doc.save(doc_name)
+
+    pdf_name = doc_name.replace('.docx', '.pdf')
+    try:
+        from docx2pdf import convert
+        convert(doc_name, pdf_name)
+        import os
+        os.chmod(pdf_name, 0o444)
+        with open(pdf_name, 'rb') as f:
+            data = f.read()
+    except Exception:
+        data = b''
+    return pdf_name, data
+
         if not st.session_state.step8_pdfs:
             for tkey, group in results.items():
                 fname, data = make_pdf(tkey, group)
