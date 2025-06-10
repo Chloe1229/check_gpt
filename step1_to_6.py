@@ -1,3 +1,4 @@
+import streamlit as st
 from datetime import date␊
 import base64
 from docx import Document
@@ -1232,7 +1233,7 @@ if "step7_results" not in st.session_state:
 if "step7_page" not in st.session_state:
     st.session_state.step7_page = 0
 
-FALLBACK_MESSAGE = (
+STEP7_FALLBACK_MESSAGE = (
     "해당 변경사항에 대한 충족조건을 고려하였을 때,\n"
     "「의약품 허가 후 제조방법 변경관리 가이드라인」에서 제시하고 있는\n"
     "범위에 해당하지 않는 것으로 확인됩니다"
@@ -1264,14 +1265,16 @@ def go_to_prev_step7_page():
     if st.session_state.step7_page > 0:
         st.session_state.step7_page -= 1
 
-def go_to_next_step7_page():
-    if st.session_state.step7_page < len(st.session_state.step6_targets) - 1:
-        st.session_state.step7_page += 1
+def go_to_next_step7_page():␊
+    if st.session_state.step7_page < len(st.session_state.step6_targets) - 1:␊
+        st.session_state.step7_page += 1␊
+␊
 
 def go_to_step8():
     st.session_state.step = 8
 
 if st.session_state.step == 7:
+
     st.markdown("## 7단계")
     st.write("Step 7. 선택한 항목의 보고유형 및 필요서류를 확인하세요.")
 
@@ -1293,7 +1296,7 @@ if st.session_state.step == 7:
                 st.markdown(text1)
                 st.markdown(text2)
         else:
-            st.markdown(FALLBACK_MESSAGE)
+            st.markdown(STEP7_FALLBACK_MESSAGE)
 
         col1, col2 = st.columns(2)
         with col1:
@@ -1311,18 +1314,20 @@ if st.session_state.step == 7:
 
 
 # ===== Step 7 =====
-import pandas as pd
 from datetime import date
 from fpdf import FPDF
 import base64
 
 # Step7/8에서 조건 미충족 시 표시할 기본 문구
-FALLBACK_MESSAGE = "신청양식 자동생성 불가: 도출 결과 없음"
+STEP8_FALLBACK_MESSAGE =  (
+    "해당 변경사항에 대한 충족조건을 고려하였을 때,\n"
+    "「의약품 허가 후 제조방법 변경관리 가이드라인」에서 제시하고 있는\n"
+    "범위에 해당하지 않는 것으로 확인됩니다"
+)
 
 # Load step7 evaluation rows once
 if 'STEP7_ROWS' not in st.session_state:
-    df = pd.read_excel('step7_data_refac.xlsx')
-    st.session_state.STEP7_ROWS = df.to_dict('records')
+    st.session_state.STEP7_ROWS = STEP7_ROWS
 
 if 'step7_results' not in st.session_state:
     st.session_state.step7_results = {}
@@ -1355,17 +1360,13 @@ def compute_step7_results():
             })
     st.session_state.step7_results = results
 
-
-def go_to_step8():
-    st.session_state.step = 8
-
 if st.session_state.step == 7:
     st.markdown('## Step 7 결과')
     if not st.session_state.step7_results:
         compute_step7_results()
     results = st.session_state.step7_results
     if not results:␊
-        st.markdown(FALLBACK_MESSAGE)
+        st.markdown(STEP7_FALLBACK_MESSAGE)
     else:
         for tkey, data in results.items():
             st.markdown(f"### {data['title_text']}")
@@ -1433,14 +1434,30 @@ def make_pdf(title_key, group):
         data = b''
     return pdf_name, data
 
-        if not st.session_state.step8_pdfs:
-            for tkey, group in results.items():
-                fname, data = make_pdf(tkey, group)
-                st.session_state.step8_pdfs[tkey] = {'name': fname, 'data': data}
+
+if st.session_state.step == 8:
+    results = st.session_state.step7_results
+    if not st.session_state.step8_pdfs:
+        for tkey, group in results.items():
+            fname, data = make_pdf(tkey, group)
+            st.session_state.step8_pdfs[tkey] = {"name": fname, "data": data}
+    if results:
         for tkey, info in st.session_state.step8_pdfs.items():
             st.markdown(f"### {tkey}")
-            b64 = base64.b64encode(info['data']).decode()
+            b64 = base64.b64encode(info["data"]).decode()
             st.download_button('파일 다운로드하기', info['data'], file_name=info['name'])
-            st.button('인쇄하기', on_click=lambda b64=b64: st.components.v1.html(f"<iframe src='data:application/pdf;base64,{b64}' onload='this.contentWindow.print();'></iframe>", height=0))
-            st.components.v1.html(f"<iframe src='data:application/pdf;base64,{b64}' width='700' height='900'></iframe>", height=900)
+            st.button(
+                '인쇄하기',
+                on_click=lambda b64=b64: st.components.v1.html(
+                    f"<iframe src='data:application/pdf;base64,{b64}' onload='this.contentWindow.print();'></iframe>",
+                    height=0,
+                ),
+            )
+            st.components.v1.html(
+                f"<iframe src='data:application/pdf;base64,{b64}' width='700' height='900'></iframe>",
+                height=900,
+            )
+    else:
+        st.markdown(FALLBACK_MESSAGE)
+
 
