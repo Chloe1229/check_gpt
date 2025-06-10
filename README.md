@@ -1,5 +1,5 @@
 📌\[Declaration]
-This specification defines the instruction set for Codex to generate a fully hardcoded implementation of step7 and step8. These steps must be executed directly after step6 without modifying any existing data structures, variables, or session keys used in step1\_to\_6.py.
+This specification defines the instruction set for Codex to generate a fully hardcoded implementation of step7 and step8. These steps must be executed directly after step6 without modifying any existing data structures, variables, or session keys used in step1\_to\_8.py.
 
 The objective is to convert structured data, predefined conditional logic, and template field mappings into deterministic, fully hardcoded code blocks that require no user inference or external dependency.
 
@@ -13,7 +13,7 @@ The following reference files are mandatory and authoritative:
 * step7\_data\_refac.xlsx:
   Contains finalized logic expressions and output text blocks for each condition. These expressions are ready-to-evaluate and must be inserted directly.
 
-* step1\_to\_6.py:
+* step1\_to\_8.py:
   Defines all inputs and stored session values. Keys from step6 must be reused exactly.
 
 * step6\_used\_key\_info.csv:
@@ -53,7 +53,7 @@ This declaration overrides all prior instructions. Codex must treat this documen
 📌\[Purpose of This Specification]
 The purpose of this document is to instruct Codex to generate a fully hardcoded implementation of both step7 and step8 logic, fully aligned with the following constraints:
 
-1. User selection state stored in st.session\_state.step6\_selections (as implemented in step1\_to\_6.py)
+1. User selection state stored in st.session\_state.step6\_selections (as implemented in step1\_to\_8.py)
 2. Condition expressions and outputs explicitly defined in step7\_data\_refac.xlsx
 3. Key definitions validated exclusively through step6\_used\_key\_info.csv
 4. Output templates and form mappings based on the filled example provided for step8 layout
