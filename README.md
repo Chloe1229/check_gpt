@@ -177,3 +177,49 @@ PDF Output:
 Codex must render step8 only after all step7 results are finalized, using step7\_results as the sole data source.
 
 Output fields must follow the structure defined in the filled version of the template Excel provided. Codex must extract the field mappings directly from the filled template structure and not infer or omit any logic.
+
+[Project Purpose]
+- This project is for the automatic generation of regulatory application forms (according to the “Guidelines for Managing Post-Approval Changes in Manufacturing Methods”)—specifically, the hardcoded implementation of STEP7 and STEP8.
+- Users proceed through STEP6, making selections (Fulfilled/Not fulfilled, etc.), which are saved in st.session_state.step6_selections as a dict.
+- All logic, structure, text, and templates for STEP7/STEP8 must be **strictly hardcoded**; no code inference, shortening, or text modification is allowed.
+
+[Data and Code Structure]
+- In step1_to_7 (4).py, the 75 evaluation cases are hardcoded in a dict list (e.g., STEP7_ROWS).
+    - Each dict contains: title_key, output_condition_all_met (as string), output_1_text, output_2_text, and metadata.
+    - output_condition_all_met is always a string (e.g., "step6_selections.get('s2_2_sub_2a') == 'Changed' and ..."), to be evaluated at runtime using eval().
+- Each title_key (e.g., 's2_2', 'p7_14') defines one logical “page” (group); multiple cases may share a title_key.
+
+[STEP7 Details: Independent Evaluation and Grouping]
+1. **Each of the 75 evaluation cases in STEP7 must be implemented as a fully hardcoded if-block or eval block.**
+2. **Cases with the same title_key are grouped as one “page”; results are displayed in parallel on that page.**
+3. For each case:
+    - Independently evaluate against the user’s STEP6 selections.
+    - If one or more cases under a title_key match, output *all* of their results in parallel (sub-heading + output text).
+    - If none match, display the fallback guidance message only (“No matching case…”).
+4. **No for-loops, functions, or dynamic logic—everything must be hardcoded (no matter how verbose).**
+5. Output text, formatting, numbering, markdown, etc. must be printed exactly as in STEP7_ROWS (no change allowed).
+
+[Example Workflow]
+- If there are 7 cases with title_key 's2_2', and user input matches 2, display both results as parallel blocks.
+- If none match for 's2_2', display only the guidance message.
+
+[STEP8 Details: Official Form PDF Generation]
+1. For each title_key with results, generate a PDF page using the official template (provided Word/Excel/image).
+2. Page and table structure, field names, cell positions, line breaks, etc. must be **100% identical** to the template.
+3. Insert STEP7/6 output (application type, documents, conditions, etc.) exactly as output (no changes, translations, or formatting differences).
+    - Applicant and manual fields remain blank.
+    - Table borders, widths, fonts, colors, and line breaks must match template 1:1.
+4. Implement PDF download/print buttons; PDF must be read-only.
+
+[Error/Exception Handling]
+- If none of the cases under a title_key match, display only the default guidance message.
+
+[Critical Notes]
+- No refactoring, dynamic code, or extra features outside this scope.
+- Absolutely NO change (add, omit, alter) to output text, table structure, or logic.
+- If unclear, clarify before proceeding.
+
+[References]
+- step1_to_7 (4).py: full code and logic
+- step7_data_refac.xlsx: all original conditions and output text
+- STEP8 Word/Excel/image: PDF layout and fields for strict matching
