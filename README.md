@@ -241,3 +241,21 @@ Output fields must follow the structure defined in the filled version of the tem
 - step1_to_7 (4).py: full code and logic
 - step7_data_refac.xlsx: all original conditions and output text
 - STEP8 Word/Excel/image: PDF layout and fields for strict matching
+
+## Setup
+
+The code targets Python 3.9+ and needs several packages to run steps 7 and 8:
+
+- streamlit
+- pandas
+- openpyxl
+- python-docx
+- reportlab (or a compatible PDF library)
+
+These scripts reference `step7_data_refac.xlsx` and the Word templates (`제조방법변경 신청양식_empty.docx`, `제조방법변경 신청양식_filled.docx`) from the repository root. Ensure these files are present when running the application.
+
+For convenience, a `requirements.txt` file is included so you can install the dependencies with:
+
+```bash
+pip install -r requirements.txt
+```
