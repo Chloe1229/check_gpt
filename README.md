@@ -251,6 +251,7 @@ The code targets Python 3.9+ and needs several packages to run steps 7 and 8:
 - openpyxl
 - python-docx
 - reportlab (or a compatible PDF library)
+- docx2pdf (for converting Word documents to PDF)
 
 These scripts reference `step7_data_refac.xlsx` and the Word templates (`제조방법변경 신청양식_empty.docx`, `제조방법변경 신청양식_filled.docx`) from the repository root. Ensure these files are present when running the application.
 
@@ -259,3 +260,5 @@ For convenience, a `requirements.txt` file is included so you can install the de
 ```bash
 pip install -r requirements.txt
 ```
+
+This installs all necessary packages including `docx2pdf` for DOCX to PDF conversion.
