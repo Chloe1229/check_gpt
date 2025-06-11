@@ -1,6 +1,7 @@
 import streamlit as st
 import base64
 import datetime
+import os
 
 from docx import Document
 from docx2pdf import convert
@@ -1400,9 +1401,14 @@ if st.session_state.step == 8:
             output_1_text = result_blocks[0][1]
             output_2_text = result_blocks[0][2]
 
-            doc = Document("제조방법변경 신청양식_empty.docx")
+            form_path = "제조방법변경 신청양식_empty_.docx"
+            try:
+                doc = Document(form_path)
+            except Exception:
+                st.error(f"신청양식 서식 파일을 열 수 없습니다: {form_path}")
+                continue
             table = doc.tables[0]
-
+            
             first_line = output_1_text.splitlines()[0] if output_1_text else ""
 
             for col in range(2):
